@@ -26,6 +26,28 @@ namespace Maxit
 
     class Program
     {
+        public static int rowIsEmpty(int[,] array, int size, int row)   // return -1 if row is empty or the index of the remaining number
+        {
+            int i; 
+            for (i = 0; i < size; i++)
+            {
+                if (array[row, i] != 'X')
+                    return i; 
+            }
+            return -1; 
+        }
+
+        public static int columnIsEmpty(int[,] array, int size, int column)   // return -1 if column is empty or the index of the remaining number
+        {
+            int i; 
+            for(i=0; i<size; i++)
+            {
+                if(array[i,column] != 'X')
+                    return i; 
+            }
+            return -1; 
+        }
+
         #region boardIsEmpty - check to see if all coordinates have been selected
         public static bool boardIsEmpty(int N, int[,] array)
         {
@@ -47,11 +69,64 @@ namespace Maxit
         }
         #endregion 
 
-        #region printGrid(int size, int[,] array)
-        public static void printGrid(int size, int[,] array)
+        // Must select from current row and column 
+        #region getCPUSelection - get the selection of the CPU based on a simple selection algorithm 
+        public static void getCPUSelection(int N, int[,] array, ref int rowSelection, ref int columnSelection, int lastSelectedRow, int lastSelectedColumn)
+        {
+            
+            // Look for the maximum value in the grid but must be in lastSelectedRow or lastSelectedColumn
+            int i, j, max = -10;
+            int row=0, column=0;
+            for (i = 0; i < N; i++)
+            {
+                if (array[lastSelectedRow, i] > max && array[lastSelectedRow, i] != 'X')
+                {
+                    max = array[lastSelectedRow,i];
+                    row = lastSelectedRow;
+                    column = i; 
+                }
+            }
+
+            for (i = 0; i < N; i++)
+            {
+                if (array[i, lastSelectedColumn] > max && array[i, lastSelectedColumn] != 'X')
+                {
+                    max = array[i, lastSelectedColumn];
+                    row = i;
+                    column = lastSelectedColumn;
+                }
+            }
+            
+            rowSelection = row;
+            columnSelection = column; 
+            return; 
+
+
+
+            
+
+            
+        }
+        #endregion 
+
+
+        #region Print score
+        public static void printScore(int userScore, int computerScore)
+        {
+            Console.WriteLine("\n-------- Scoreboard --------"); 
+            Console.WriteLine("User: " + userScore + " points");
+            Console.WriteLine("CPU: " + computerScore + " points");
+            Console.WriteLine("----------------------------\n");
+
+        }
+        #endregion 
+
+        #region printGrid(int size, int[,] array, int lastSelectedRow, int lastSelectedColumn)
+        public static void printGrid(int size, int[,] array, int lastSelectedRow, int lastSelectedColumn)
         {
             int N = size;
             int i,j;
+            Console.WriteLine("Last selection: [" + lastSelectedRow + "," + lastSelectedColumn + "]"); 
             #region Print numbers for top 
             Console.Write("   "); 
             for (i = 0; i < N; i++)
@@ -64,6 +139,7 @@ namespace Maxit
 
             Console.Write("\n"); 
 
+            // Bug: If the entire row is empty, find the first entry in the 2D array and put it there
             #region Print rows of numbers
             for (i = 0; i < N; i++)
             {
@@ -71,8 +147,31 @@ namespace Maxit
 
                 for (j = 0; j < N; j++)
                 {
+                    if (array[i, j] == 'X')
+                    {
+                        
+                        if (i == lastSelectedRow && j == lastSelectedColumn)
+                        {
+                            Console.Write("X<--\t");
 
-                    Console.Write(array[i, j] + "\t");
+                        }
+                        else
+                        {
+                            Console.Write("X\t");
+                        }
+                    }
+                    else
+                    {
+                        
+                        if (i == lastSelectedRow && j == lastSelectedColumn)
+                        {
+                            Console.Write(array[i, j] + "<--\t");
+                        }
+                        else
+                        {
+                            Console.Write(array[i, j] + "\t");
+                        }
+                    }
                     
                 }
 
@@ -84,10 +183,23 @@ namespace Maxit
         }
         #endregion 
 
+        #region Generate a random start point 
+        public static void initializeStartPoint(ref int row, ref int column, int N)
+        {
+            row = StaticRandom.Instance.Next(0, N);
+            column = StaticRandom.Instance.Next(0, N);
+            Console.WriteLine("Initial position is [" + row + "," + column + "]\n"); 
+        }
+        #endregion 
+
         static void Main(string[] args)
         {
             System.Console.Write("Welcome to Maxit!\n\n");
             int N = 0;
+            bool humanTurn = true;
+            int userScore = 0, computerScore = 0;
+            int lastSelectedRow=0, lastSelectedColumn=0;
+            int initialRow=0, initialColumn=0;
 
             #region Get size of the grid 
             Console.WriteLine("Enter size of grid (N x N): ");
@@ -104,15 +216,20 @@ namespace Maxit
                 isNumeric = int.TryParse(sizeEntry, out N);
             }
 
-            Console.WriteLine("Thank you for writing a numeric value. N is " + N + "."); 
+            //Console.WriteLine("Thank you for writing a numeric value. N is " + N + "."); 
             #endregion 
 
+            #region Initialize array, initial position 
             int[,] array = new int[N, N];       // Now we can create an array for the game. 
+            initializeStartPoint(ref initialRow, ref initialColumn, N);
+            lastSelectedRow = initialRow;
+            lastSelectedColumn = initialColumn;
+            #endregion
 
             #region Determine the 0-indexes of the grid. (N-1)
             int bound0 = array.GetUpperBound(0);    // bound0 = N-1
             int bound1 = array.GetUpperBound(1);    //  = bound1 = N-1
-            Console.WriteLine("The 0-based size of the grid is " + bound0 + "."); 
+            //Console.WriteLine("The 0-based size of the grid is " + bound0 + ".\n\n"); 
             #endregion 
             
             #region Populate array with random numbers
@@ -130,11 +247,104 @@ namespace Maxit
             }
             #endregion 
 
-            printGrid(N, array); 
+            printGrid(N, array, lastSelectedRow, lastSelectedColumn);    // Print the initial grid 
 
-            // Prompt for user selection
-                // While there are selections remaining()
+            int rowSelection=0, columnSelection=0;
+            string line;
+            int value = 0;
+
+            #region Game loop 
             while (!boardIsEmpty(N, array))
+            {
+                while (humanTurn)
+                {
+                    Console.WriteLine("Enter the row of your selection: ");
+                    line = Console.ReadLine();
+                    // while(is numeric AND is a valid 0-based number
+
+                    while (!int.TryParse(line, out rowSelection) && rowSelection >= N-1)
+                    {
+                        // This part isn't quite right. It doesn't actually have to be in the same row, it can be same row OR same column
+                        Console.WriteLine("Enter the row of your selection (must be in row " + lastSelectedRow + "): ");
+                        line = Console.ReadLine(); 
+                        if (rowSelection > N - 1)
+                            Console.WriteLine("Invalid entry.");
+                    }
+
+                    Console.WriteLine("Enter the column of your selection: ");
+                    line = Console.ReadLine();
+                    while (!int.TryParse(line, out columnSelection) && rowSelection >= N - 1)
+                    {
+                        Console.WriteLine("Enter the column of your selection: ");
+                        line = Console.ReadLine();
+                        if (columnSelection > N - 1)
+                            Console.WriteLine("Invalid entry.");
+                    }
+
+                    // If either the rowSelection is the same, or the column selection is the same as the last selection. (For rules of the game)
+                    if (!(rowSelection == lastSelectedRow || columnSelection == lastSelectedColumn || rowSelection > N-1 || columnSelection > N-1))
+                    {
+                       
+                        Console.WriteLine("Please select either a value in row " + lastSelectedRow + " or column " + lastSelectedColumn + " and between 0 and " + (N-1) + ".");
+                        break; 
+                    }
+                    value = array[rowSelection, columnSelection];
+                    lastSelectedRow = rowSelection;
+                    lastSelectedColumn = columnSelection; 
+                    if (value == 'X')
+                    {
+                        Console.WriteLine("That coordinate has already been selected. Please choose another different number.");
+                        break;
+                    }
+                    else
+                    {
+                        array[rowSelection, columnSelection] = 'X';
+                        userScore += value; 
+                        Console.WriteLine("You have selected " + value + " from array[" + rowSelection + "," + columnSelection + "].");
+                        //humanTurn = false;
+                    }
+                    humanTurn = false;
+                    printScore(userScore, computerScore);
+                    printGrid(N, array, lastSelectedRow, lastSelectedColumn);
+                }
+                while (!humanTurn)
+                {
+                    getCPUSelection(N, array, ref rowSelection, ref columnSelection, lastSelectedRow, lastSelectedColumn);
+                    value = array[rowSelection, columnSelection];
+                    lastSelectedRow = rowSelection;
+                    lastSelectedColumn = columnSelection;
+                    if (value == 'X')
+                    {
+                        Console.WriteLine("That coordinate has already been selected.");
+                        break;
+                    }
+                    else
+                    {
+                        array[rowSelection, columnSelection] = 'X';
+                        computerScore += value; 
+                        Console.WriteLine("CPU selected " + value + " from array[" + rowSelection + "," + columnSelection + "].");
+
+
+                        //humanTurn = true;
+                    }
+
+                    humanTurn = true; 
+                    printScore(userScore, computerScore);
+                    printGrid(N, array, lastSelectedRow, lastSelectedColumn);
+                }
+            }
+            #endregion
+
+            #region Print the outcome of the game 
+            // The game is over, print the winner!
+            if (userScore > computerScore)
+                Console.WriteLine("\nCongratulations! You have successfully beat the computer by a score of " + userScore + " to " + computerScore + ".");
+            else if (userScore < computerScore)
+                Console.WriteLine("\nYou lost to CPU by a score of " + userScore + " to " + computerScore + ". Are you some sort of idiot!?");
+            #endregion 
+            
+
+            #region Press Enter to exit...
             Console.WriteLine("Press Enter to exit....");
             System.ConsoleKeyInfo KInfo= Console.ReadKey(true);
             while (KInfo.Key.ToString() != "Enter")
@@ -145,7 +355,8 @@ namespace Maxit
 
             if (KInfo.Key.ToString() == "Enter")
                 return;
-            
+            #endregion 
+
 
         }
     }
