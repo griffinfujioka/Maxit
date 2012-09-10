@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading; 
-
-
+using System.Threading;
+using Maxit; 
 
 namespace Maxit
 {
@@ -26,27 +25,50 @@ namespace Maxit
 
     class Program
     {
-        public static int rowIsEmpty(int[,] array, int size, int row)   // return -1 if row is empty or the index of the remaining number
+        #region findAvailableSelection
+        public static void findAvailableSelection(int[,] array, int size, ref int row, ref int column)
+        {
+            int i, j;
+            for (i = 0; i < size; i++)
+            {
+                for (j = 0; j < size; j++)
+                {
+                    if (array[i, j] != 'X')
+                    {
+                        row = i;
+                        column = j;
+                        return; 
+                    }
+                }
+            }
+        }
+        #endregion
+
+        #region rowIsEmpty
+        public static bool rowIsEmpty(int[,] array, int size, int row)   // return -1 if row is empty or the index of the remaining number
         {
             int i; 
             for (i = 0; i < size; i++)
             {
                 if (array[row, i] != 'X')
-                    return i; 
+                    return false; 
             }
-            return -1; 
+            return true; 
         }
+        #endregion 
 
-        public static int columnIsEmpty(int[,] array, int size, int column)   // return -1 if column is empty or the index of the remaining number
+        #region columnIsEmpty
+        public static bool columnIsEmpty(int[,] array, int size, int column)   // return -1 if column is empty or the index of the remaining number
         {
             int i; 
             for(i=0; i<size; i++)
             {
                 if(array[i,column] != 'X')
-                    return i; 
+                    return false; 
             }
-            return -1; 
+            return true; 
         }
+        #endregion 
 
         #region boardIsEmpty - check to see if all coordinates have been selected
         public static bool boardIsEmpty(int N, int[,] array)
@@ -69,13 +91,12 @@ namespace Maxit
         }
         #endregion 
 
-        // Must select from current row and column 
         #region getCPUSelection - get the selection of the CPU based on a simple selection algorithm 
         public static void getCPUSelection(int N, int[,] array, ref int rowSelection, ref int columnSelection, int lastSelectedRow, int lastSelectedColumn)
         {
             
-            // Look for the maximum value in the grid but must be in lastSelectedRow or lastSelectedColumn
-            int i, j, max = -10;
+            // Look for the maximum value in the grid but must be in lastSelectedRow or lastSelectedColumn - Must select from current row and column 
+            int i, max = -10;   // max initially (lowest possible number - 1) = (-9 - 1)
             int row=0, column=0;
             for (i = 0; i < N; i++)
             {
@@ -100,15 +121,9 @@ namespace Maxit
             rowSelection = row;
             columnSelection = column; 
             return; 
-
-
-
-            
-
-            
         }
         #endregion 
-
+ 
 
         #region Print score
         public static void printScore(int userScore, int computerScore)
@@ -183,6 +198,68 @@ namespace Maxit
         }
         #endregion 
 
+        #region printGrid override: Pass in last selected location to and put indicating '<--' next to that location 
+        //public static void printGrid(int size, int[,] array, int foundRow, int foundColumn)
+        //{
+        //    int N = size;
+        //    int i, j;
+        //    Console.WriteLine("Last selection: [" + foundRow + "," + foundColumn + "]");
+        //    #region Print numbers for top
+        //    Console.Write("   ");
+        //    for (i = 0; i < N; i++)
+        //        Console.Write(i + "\t");
+        //    Console.Write("\n");
+        //    Console.Write("   ");
+        //    for (i = 0; i < N; i++)
+        //        Console.Write("-\t");
+        //    #endregion
+
+        //    Console.Write("\n");
+
+        //    // Bug: If the entire row is empty, find the first entry in the 2D array and put it there
+        //    #region Print rows of numbers
+        //    for (i = 0; i < N; i++)
+        //    {
+        //        Console.Write(i + "| ");   // Write the row number 
+
+        //        for (j = 0; j < N; j++)
+        //        {
+        //            if (array[i, j] == 'X')
+        //            {
+
+        //                if (i == foundRow && j == foundColumn)
+        //                {
+        //                    Console.Write("X<--\t");
+
+        //                }
+        //                else
+        //                {
+        //                    Console.Write("X\t");
+        //                }
+        //            }
+        //            else
+        //            {
+
+        //                if (i == foundRow && j == foundColumn)
+        //                {
+        //                    Console.Write(array[i, j] + "<--\t");
+        //                }
+        //                else
+        //                {
+        //                    Console.Write(array[i, j] + "\t");
+        //                }
+        //            }
+
+        //        }
+
+        //        Console.Write("\n");
+
+
+        //    }
+        //    #endregion
+        //}
+        #endregion 
+
         #region Generate a random start point 
         public static void initializeStartPoint(ref int row, ref int column, int N)
         {
@@ -195,13 +272,29 @@ namespace Maxit
         static void Main(string[] args)
         {
             System.Console.Write("Welcome to Maxit!\n\n");
+
+            #region Variable declarations
             int N = 0;
             bool humanTurn = true;
             int userScore = 0, computerScore = 0;
             int lastSelectedRow=0, lastSelectedColumn=0;
             int initialRow=0, initialColumn=0;
+            bool emptyRow = false;
+            bool emptyColumn = false;
+            int rowSelection=0, columnSelection=0;
+            string line;
+            int value = 0;
+            bool gameIsOver = false; 
+            #endregion 
 
-            #region Get size of the grid 
+            #region Run in test mode?
+            Console.WriteLine("Run in test mode? (y/n)"); 
+            System.ConsoleKeyInfo KInfo = Console.ReadKey(true); 
+            if(KInfo.KeyChar == 'y')
+                Maxit.TestDrivers.main(args);
+            #endregion 
+
+            #region Get size of the grid
             Console.WriteLine("Enter size of grid (N x N): ");
             string sizeEntry = Console.ReadLine();
             if (sizeEntry == null)      // Something went terribly wrong? 
@@ -214,6 +307,7 @@ namespace Maxit
                 Console.WriteLine("Please enter a numeric value.");
                 sizeEntry = Console.ReadLine();
                 isNumeric = int.TryParse(sizeEntry, out N);
+            
             }
 
             //Console.WriteLine("Thank you for writing a numeric value. N is " + N + "."); 
@@ -249,15 +343,22 @@ namespace Maxit
 
             printGrid(N, array, lastSelectedRow, lastSelectedColumn);    // Print the initial grid 
 
-            int rowSelection=0, columnSelection=0;
-            string line;
-            int value = 0;
-
             #region Game loop 
-            while (!boardIsEmpty(N, array))
+            while ((!boardIsEmpty(N, array)) && (!gameIsOver))
             {
                 while (humanTurn)
                 {
+                    emptyRow = rowIsEmpty(array, N, lastSelectedRow);
+                    emptyColumn = columnIsEmpty(array, N, lastSelectedColumn);
+                    if (emptyRow && emptyColumn)
+                    {
+                        gameIsOver = true;
+                        Console.WriteLine("There are no valid selections in either the row or the column. Game is over."); 
+                        // Find a remaining number 
+                        //findAvailableSelection(array, N, ref lastSelectedRow, ref lastSelectedColumn); 
+                        // Print grid with that number being indicated as the last selection 
+                        //printGrid(N, array, lastSelectedRow, lastSelectedColumn); 
+                    }
                     Console.WriteLine("Enter the row of your selection: ");
                     line = Console.ReadLine();
                     // while(is numeric AND is a valid 0-based number
@@ -288,6 +389,8 @@ namespace Maxit
                         Console.WriteLine("Please select either a value in row " + lastSelectedRow + " or column " + lastSelectedColumn + " and between 0 and " + (N-1) + ".");
                         break; 
                     }
+                    
+                    Console.WriteLine("emptyRow is " + emptyRow + " and emptyColumn is " + emptyColumn); 
                     value = array[rowSelection, columnSelection];
                     lastSelectedRow = rowSelection;
                     lastSelectedColumn = columnSelection; 
@@ -309,6 +412,13 @@ namespace Maxit
                 }
                 while (!humanTurn)
                 {
+                    emptyRow = rowIsEmpty(array, N, lastSelectedRow);
+                    emptyColumn = columnIsEmpty(array, N, lastSelectedColumn);
+                    if (emptyRow && emptyColumn)
+                    {
+                        Console.WriteLine("There are no valid selections in either the row or the column. Game is over."); 
+                        gameIsOver = true; 
+                    }
                     getCPUSelection(N, array, ref rowSelection, ref columnSelection, lastSelectedRow, lastSelectedColumn);
                     value = array[rowSelection, columnSelection];
                     lastSelectedRow = rowSelection;
@@ -316,6 +426,7 @@ namespace Maxit
                     if (value == 'X')
                     {
                         Console.WriteLine("That coordinate has already been selected.");
+                        
                         break;
                     }
                     else
@@ -343,10 +454,9 @@ namespace Maxit
                 Console.WriteLine("\nYou lost to CPU by a score of " + userScore + " to " + computerScore + ". Are you some sort of idiot!?");
             #endregion 
             
-
             #region Press Enter to exit...
             Console.WriteLine("Press Enter to exit....");
-            System.ConsoleKeyInfo KInfo= Console.ReadKey(true);
+            KInfo= Console.ReadKey(true);
             while (KInfo.Key.ToString() != "Enter")
             {
                 Console.WriteLine("Press Enter to exit...");
