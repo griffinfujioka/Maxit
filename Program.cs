@@ -198,67 +198,6 @@ namespace Maxit
         }
         #endregion 
 
-        #region printGrid override: Pass in last selected location to and put indicating '<--' next to that location 
-        //public static void printGrid(int size, int[,] array, int foundRow, int foundColumn)
-        //{
-        //    int N = size;
-        //    int i, j;
-        //    Console.WriteLine("Last selection: [" + foundRow + "," + foundColumn + "]");
-        //    #region Print numbers for top
-        //    Console.Write("   ");
-        //    for (i = 0; i < N; i++)
-        //        Console.Write(i + "\t");
-        //    Console.Write("\n");
-        //    Console.Write("   ");
-        //    for (i = 0; i < N; i++)
-        //        Console.Write("-\t");
-        //    #endregion
-
-        //    Console.Write("\n");
-
-        //    // Bug: If the entire row is empty, find the first entry in the 2D array and put it there
-        //    #region Print rows of numbers
-        //    for (i = 0; i < N; i++)
-        //    {
-        //        Console.Write(i + "| ");   // Write the row number 
-
-        //        for (j = 0; j < N; j++)
-        //        {
-        //            if (array[i, j] == 'X')
-        //            {
-
-        //                if (i == foundRow && j == foundColumn)
-        //                {
-        //                    Console.Write("X<--\t");
-
-        //                }
-        //                else
-        //                {
-        //                    Console.Write("X\t");
-        //                }
-        //            }
-        //            else
-        //            {
-
-        //                if (i == foundRow && j == foundColumn)
-        //                {
-        //                    Console.Write(array[i, j] + "<--\t");
-        //                }
-        //                else
-        //                {
-        //                    Console.Write(array[i, j] + "\t");
-        //                }
-        //            }
-
-        //        }
-
-        //        Console.Write("\n");
-
-
-        //    }
-        //    #endregion
-        //}
-        #endregion 
 
         #region Generate a random start point 
         public static void initializeStartPoint(ref int row, ref int column, int N)
@@ -302,9 +241,9 @@ namespace Maxit
             
             bool isNumeric = int.TryParse(sizeEntry, out N);        // N now = numeric value, isNumeric = false -> Not a numeric value 
 
-            while (!isNumeric)
+            while (!isNumeric || (N < 1))
             {
-                Console.WriteLine("Please enter a numeric value.");
+                Console.WriteLine("Please enter a numeric value greater than zero.");
                 sizeEntry = Console.ReadLine();
                 isNumeric = int.TryParse(sizeEntry, out N);
             
@@ -353,44 +292,39 @@ namespace Maxit
                     if (emptyRow && emptyColumn)
                     {
                         gameIsOver = true;
-                        Console.WriteLine("There are no valid selections in either the row or the column. Game is over."); 
-                        // Find a remaining number 
-                        //findAvailableSelection(array, N, ref lastSelectedRow, ref lastSelectedColumn); 
-                        // Print grid with that number being indicated as the last selection 
-                        //printGrid(N, array, lastSelectedRow, lastSelectedColumn); 
+                        Console.WriteLine("There are no valid selections in either the row or the column. Game is over.");
+                        break;
                     }
                     Console.WriteLine("Enter the row of your selection: ");
                     line = Console.ReadLine();
                     // while(is numeric AND is a valid 0-based number
 
-                    while (!int.TryParse(line, out rowSelection) && rowSelection >= N-1)
+                    while (!int.TryParse(line, out rowSelection) || rowSelection > N-1 || rowSelection < 0)
                     {
                         // This part isn't quite right. It doesn't actually have to be in the same row, it can be same row OR same column
-                        Console.WriteLine("Enter the row of your selection (must be in row " + lastSelectedRow + "): ");
+                        Console.WriteLine("Enter the row of your selection: ");
                         line = Console.ReadLine(); 
-                        if (rowSelection > N - 1)
-                            Console.WriteLine("Invalid entry.");
                     }
 
                     Console.WriteLine("Enter the column of your selection: ");
                     line = Console.ReadLine();
-                    while (!int.TryParse(line, out columnSelection) && rowSelection >= N - 1)
+                    while (!int.TryParse(line, out columnSelection) || columnSelection > N-1 || columnSelection < 0)
                     {
                         Console.WriteLine("Enter the column of your selection: ");
                         line = Console.ReadLine();
-                        if (columnSelection > N - 1)
-                            Console.WriteLine("Invalid entry.");
                     }
 
                     // If either the rowSelection is the same, or the column selection is the same as the last selection. (For rules of the game)
-                    if (!(rowSelection == lastSelectedRow || columnSelection == lastSelectedColumn || rowSelection > N-1 || columnSelection > N-1))
+                        // Dont think I need the last two conditions of this if-statement, but hey, I suppose it won't hurt anything
+                    if (!(rowSelection == lastSelectedRow || columnSelection == lastSelectedColumn))
                     {
                        
                         Console.WriteLine("Please select either a value in row " + lastSelectedRow + " or column " + lastSelectedColumn + " and between 0 and " + (N-1) + ".");
                         break; 
                     }
                     
-                    Console.WriteLine("emptyRow is " + emptyRow + " and emptyColumn is " + emptyColumn); 
+                    //Console.WriteLine("emptyRow is " + emptyRow + " and emptyColumn is " + emptyColumn); 
+                    
                     value = array[rowSelection, columnSelection];
                     lastSelectedRow = rowSelection;
                     lastSelectedColumn = columnSelection; 
@@ -404,7 +338,6 @@ namespace Maxit
                         array[rowSelection, columnSelection] = 'X';
                         userScore += value; 
                         Console.WriteLine("You have selected " + value + " from array[" + rowSelection + "," + columnSelection + "].");
-                        //humanTurn = false;
                     }
                     humanTurn = false;
                     printScore(userScore, computerScore);
@@ -417,7 +350,8 @@ namespace Maxit
                     if (emptyRow && emptyColumn)
                     {
                         Console.WriteLine("There are no valid selections in either the row or the column. Game is over."); 
-                        gameIsOver = true; 
+                        gameIsOver = true;
+                        break; 
                     }
                     getCPUSelection(N, array, ref rowSelection, ref columnSelection, lastSelectedRow, lastSelectedColumn);
                     value = array[rowSelection, columnSelection];
@@ -435,8 +369,6 @@ namespace Maxit
                         computerScore += value; 
                         Console.WriteLine("CPU selected " + value + " from array[" + rowSelection + "," + columnSelection + "].");
 
-
-                        //humanTurn = true;
                     }
 
                     humanTurn = true; 
